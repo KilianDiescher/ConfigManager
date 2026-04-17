@@ -18,10 +18,12 @@ class ConfigManager(App):
 
     def on_mount(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.join(base_dir,"configs.json")):
+        self.config_path = os.path.join(base_dir, "configs.json")
+
+        if os.path.exists(self.config_path):
             self.configs: dict[str, str] = self.load_configs()
         else:
-            self.configs: dict[str, str] = {}
+            self.configs = {}
 
         self.selection_mode = "select"
         self.update_list()
@@ -92,6 +94,11 @@ class ConfigManager(App):
             self.notify("Cancelled")
             return
 
+        name = value[0].strip()
+        path = value[1].strip()
+        if not name or not path:
+            self.notify("Name and path are required")
+            return
 
         self.configs[value[0]] = value[1]
         self.notify(f"Added: {value[0]} with path {value[1]}")
@@ -123,12 +130,22 @@ class ConfigManager(App):
         self.save_configs()
 
     def save_configs(self):
-        with open("configs.json","w") as file:
-            json.dump(self.configs,file)
+        tmp_path = f"{self.config_path}.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as file:
+            json.dump(self.configs, file, indent=2, ensure_ascii=False)
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(tmp_path, self.config_path)
 
     def load_configs(self):
-        with open("configs.json","r") as file:
-            return json.load(file)
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+            if isinstance(data, dict):
+                return {str(k): str(v) for k, v in data.items()}
+            return {}
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
 
 
 
