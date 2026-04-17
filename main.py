@@ -42,7 +42,6 @@ class ConfigManager(App):
             self.notify("No selection data")
             return
         path = self.configs.get(name, "<unknown path>")
-        self.notify(f"Selected: {name} -> {path}")
 
         if self.selection_mode == "select":
             self.open_in_editor(name)
