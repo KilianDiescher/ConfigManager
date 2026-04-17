@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "config-manager-textual"
+version = "0.1.0"
+description = "Terminal config manager built with Textual"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "textual>=0.50.0",
+]
+
+[project.scripts]
+config-manager = "main:run"
+
+[tool.setuptools]
+py-modules = ["main"]

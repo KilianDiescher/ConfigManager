@@ -161,4 +161,10 @@ class AddConfigScreen(ModalScreen[str | None]):
         result = [name, path]
         self.dismiss(result or None)
 
-ConfigManager().run()
+def run() -> None:
+    ConfigManager().run()
+
+
+if __name__ == "__main__":
+    run()
+
