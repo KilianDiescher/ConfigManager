@@ -1,19 +1,21 @@
 import shlex
 import shutil
 import subprocess
-
+from AddConfigScreen import AddConfigScreen, ConfirmScreen
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button
+from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button, TextArea
 import json
 from textual.screen import ModalScreen
-from textual.containers import Vertical
+from textual.containers import Vertical, Horizontal
 import os
 
 class ConfigManager(App):
 
     BINDINGS = [("enter", "select_cursor", "Select"),
                 ("ctrl+a", "config_add", "Add new config"),
-                ("ctrl+d", "config_rm", "Delete config")
+                ("ctrl+d", "config_rm", "Remove config"),
+                ("ctrl+o", "config_save", "Save config"),
+                ("ctrl+e", "config_open", "Open in external editor"),
                 ]
 
     def on_mount(self):
@@ -26,6 +28,7 @@ class ConfigManager(App):
             self.configs = {}
 
         self.selection_mode = "select"
+        self.selection = ""
         self.update_list()
         self.refresh_status()
 
@@ -34,7 +37,10 @@ class ConfigManager(App):
 
         yield Header()
 
-        yield ListView(*items,id="configs")
+        with Horizontal():
+
+            yield ListView(*items,id="configs")
+            yield TextArea.code_editor(language="python",id="editor")
 
         yield Footer()
 
@@ -43,10 +49,12 @@ class ConfigManager(App):
         if not name:
             self.notify("No selection data")
             return
-        path = self.configs.get(name, "<unknown path>")
 
         if self.selection_mode == "select":
+            # self.open_in_ceditor(name)
+            self.selection = name
             self.open_in_editor(name)
+
         elif self.selection_mode  == "delete":
             self.configs.pop(name)
             self.selection_mode = "select"
@@ -54,8 +62,44 @@ class ConfigManager(App):
         self.update_list()
         self.refresh_status()
 
+    def open_in_editor(self, name):
+        path = self.configs.get(name, "<unknown path>")
+        Text = ""
+        with open(path,"r") as conf:
+            Text = conf.read()
 
-    def open_in_editor(self,name):
+        editor = self.query_one("#editor", TextArea)
+        editor.text = Text
+
+    def action_config_save(self):
+        if not self.selection:
+            self.notify("Select a config first")
+            return
+
+        path = self.configs.get(self.selection)
+        if not path:
+            self.notify("No path selected")
+            return
+
+        msg = f"Are you sure you want to write all changes to\n{path}?"
+        self.push_screen(ConfirmScreen(message=msg), self._on_save_confirmed)
+
+    def _on_save_confirmed(self, confirmed: bool | None) -> None:
+        if not confirmed:
+            self.notify("Cancelled")
+            return
+
+        path = self.configs.get(self.selection)
+        if not path:
+            self.notify("No path selected")
+            return
+
+        text = self.query_one("#editor", TextArea).text
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(text)
+        self.notify(f"Saved: {self.selection}")
+
+    def open_in_ceditor(self,name):
         abs_path = os.path.abspath(self.configs[name])
         terminal = self.get_terminal()
 
@@ -72,14 +116,19 @@ class ConfigManager(App):
             self.notify(f"Unsupported terminal: {term_name}")
             return
 
+    def action_config_open(self):
+        if not self.selection:
+            self.notify("Select a config first")
+            return
+        self.open_in_ceditor(self.selection)
 
     def get_terminal(self):
         terminal = (
-                shutil.which("kitty")
-                or shutil.which("foot")
-                or shutil.which("alacritty")
-                or shutil.which("wezterm")
-                or shutil.which("konsole")
+            shutil.which("kitty")
+            or shutil.which("foot")
+            or shutil.which("alacritty")
+            or shutil.which("wezterm")
+            or shutil.which("konsole")
         )
         if not terminal:
             raise RuntimeError("No supported terminal found \(kitty/foot/alacritty/wezterm\)")
@@ -147,35 +196,6 @@ class ConfigManager(App):
         except (FileNotFoundError, json.JSONDecodeError):
             return {}
 
-
-
-class AddConfigScreen(ModalScreen[str | None]):
-    def compose(self) -> ComposeResult:
-        with Vertical(id="dialog"):
-            yield Label("New config name:")
-            yield Input(placeholder="Type name...", id="name_input")
-            yield Label("New config path:")
-            yield Input(placeholder="Type path...", id="path_input")
-            yield Button("Save", id="save")
-            yield Button("Cancel", id="cancel")
-
-    def on_mount(self) -> None:
-        self.query_one("#name_input", Input).focus()
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "save":
-            name = self.query_one("#name_input", Input).value.strip()
-            path = self.query_one("#path_input", Input).value.strip()
-            result = [name,path]
-            self.dismiss(result or None)
-        else:
-            self.dismiss(None)
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        name = self.query_one("#name_input", Input).value.strip()
-        path = self.query_one("#path_input", Input).value.strip()
-        result = [name, path]
-        self.dismiss(result or None)
 
 def run() -> None:
     ConfigManager().run()
