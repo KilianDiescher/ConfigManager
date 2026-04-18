@@ -1,13 +1,18 @@
 import shlex
 import shutil
 import subprocess
-from AddConfigScreen import AddConfigScreen, ConfirmScreen
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button, TextArea
 import json
-from textual.screen import ModalScreen
-from textual.containers import Vertical, Horizontal
 import os
+
+from textual.app import App, ComposeResult
+from textual.containers import Horizontal
+from textual.widgets import Header, Footer, ListView, ListItem, Label, TextArea
+
+try:
+    from AddConfigScreen import AddConfigScreen, ConfirmScreen
+except ModuleNotFoundError:
+    from .AddConfigScreen import AddConfigScreen, ConfirmScreen
+
 
 class ConfigManager(App):
 
@@ -203,4 +208,3 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
-
