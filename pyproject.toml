@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "config-manager-textual"
-version = "1.0"
+version = "0.1.0"
 description = "Terminal config manager built with Textual"
 readme = "README.md"
 requires-python = ">=3.10"
