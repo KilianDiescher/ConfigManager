@@ -9,9 +9,6 @@ description = "Terminal config manager built with Textual"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "GPL-3.0-or-later"
-classifiers = [
-  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-]
 dependencies = [
   "textual>=0.50.0",
 ]
